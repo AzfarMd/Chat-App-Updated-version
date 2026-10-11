@@ -56,7 +56,7 @@ const fetchChats = expressAsyncHandler(async (req, res) => {
       .populate("groupAdmin", "-password")
       .populate("latestMessage")
       .sort({ updatedAt: -1 });
-
+    //-1 makes the updated msg to appear on top of the msg
     results = await User.populate(results, {
       path: "latestMessage.sender",
       select: "name pic email",
@@ -87,7 +87,7 @@ const createGroupChat = expressAsyncHandler(async (req, res) => {
       chatName: req.body.name,
       users,
       isGroupChat: true,
-      groupAdmin: req.user,
+      groupAdmin: [req.user],
     });
 
     const fullGroupChat = await Chat.findOne({ _id: groupChat._id })
@@ -123,33 +123,62 @@ const renameGroup = expressAsyncHandler(async (req, res) => {
 const addToGroup = expressAsyncHandler(async (req, res) => {
   const { chatId, userId } = req.body;
 
+  // 1. Fetch the chat first to check admins
+  const chat = await Chat.findById(chatId);
+  if (!chat) {
+    res.status(404);
+    throw new Error("Chat Not Found");
+  }
+
+  // 2. Check if the logged-in user (req.user._id) is in the groupAdmin array
+  const isAdmin = chat.groupAdmin.some(
+    (adminId) => adminId.toString() === req.user._id.toString()
+  );
+
+  if (!isAdmin) {
+    res.status(403);
+    throw new Error("Only admins can add members!");
+  }
+
+  // 3. If admin, proceed to add the user
   const added = await Chat.findByIdAndUpdate(
     chatId,
-    {
-      $push: { users: userId },
-    },
-    {
-      new: true,
-    }
+    { $push: { users: userId } },
+    { new: true }
   )
     .populate("users", "-password")
     .populate("groupAdmin", "-password");
 
-  if (!added) {
-    res.status(404);
-    throw new Error("Chat Not Found");
-  } else {
-    res.json(added);
-  }
+  res.json(added);
 });
+
 
 const removeFromGroup = expressAsyncHandler(async (req, res) => {
   const { chatId, userId } = req.body;
 
+  // 1. Fetch chat to check permissions
+  const chat = await Chat.findById(chatId);
+  if (!chat) {
+    res.status(404);
+    throw new Error("Chat Not Found");
+  }
+
+  // 2. Allow if leaving yourself OR if you are an admin
+  const isLeavingThemselves = userId.toString() === req.user._id.toString();
+  const isAdmin = chat.groupAdmin.some(
+    (adminId) => adminId.toString() === req.user._id.toString()
+  );
+
+  if (!isLeavingThemselves && !isAdmin) {
+    res.status(403);
+    throw new Error("Only admins can remove someone!");
+  }
+
+  // 3. Remove user from both 'users' and 'groupAdmin' arrays
   const removed = await Chat.findByIdAndUpdate(
     chatId,
     {
-      $pull: { users: userId },
+      $pull: { users: userId, groupAdmin: userId },
     },
     {
       new: true,
@@ -158,13 +187,9 @@ const removeFromGroup = expressAsyncHandler(async (req, res) => {
     .populate("users", "-password")
     .populate("groupAdmin", "-password");
 
-  if (!removed) {
-    res.status(404);
-    throw new Error("Chat Not Found");
-  } else {
-    res.json(removed);
-  }
+  res.json(removed);
 });
+
 
 module.exports = {
   accessChat,

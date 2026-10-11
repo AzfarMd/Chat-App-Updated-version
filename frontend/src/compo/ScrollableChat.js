@@ -10,6 +10,13 @@ const ScrollableChat = ({ messages }) => {
   return (
     <ScrollableFeed>
       {messages && messages.map((m, i) => {
+        const isRead =
+          m.readBy &&
+          m.readBy.some((reader) => {
+            const readerId = typeof reader === "object" ? reader._id : reader;
+            return readerId && readerId.toString() !== user._id.toString();
+          });
+
         return (
           <div style={{ display: "flex" }} key={m._id}>
             {(isSameSender(messages, m, i, user._id) ||
@@ -35,9 +42,26 @@ const ScrollableChat = ({ messages }) => {
                 borderRadius: "20px",
                 padding: "5px 15px",
                 maxWidth: "75%",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
               }}
             >
-            {m.content}
+              <span>{m.content}</span>
+              {m.sender._id === user._id && (
+                <span
+                  style={{
+                    fontSize: "12px",
+                    fontWeight: "bold",
+                    color: isRead ? "#0084FF" : "#718096",
+                    marginLeft: "2px",
+                    userSelect: "none",
+                  }}
+                  title={isRead ? "Read" : "Sent"}
+                >
+                  {isRead ? "✓✓" : "✓"}
+                </span>
+              )}
             </span>
           </div>
         );

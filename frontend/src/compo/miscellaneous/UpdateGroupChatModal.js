@@ -5,7 +5,7 @@ import { ChatState } from '../../Context/ChatProvider'
 import UserBadgeItem from '../UserAvatar/UserBadgeItem'
 import axios from 'axios'
 import UserListItem from '../UserAvatar/UserListItem'
-const UpdateGroupChatModal = ({fetchAgain,setFetchAgain,fetchMessages}) => {
+const UpdateGroupChatModal = ({ fetchAgain, setFetchAgain, fetchMessages }) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
   const [groupChatName, setGroupChatName] = useState();
   const [search, setSearch] = useState("");
@@ -13,53 +13,56 @@ const UpdateGroupChatModal = ({fetchAgain,setFetchAgain,fetchMessages}) => {
   const [loading, setLoading] = useState(false);
   const [renameloading, setRenameLoading] = useState(false);
   const toast = useToast();
-  const {selectedChat,setSelectedChat,user}=ChatState();
-const handleRemove=async (user1)=>{
-  if (selectedChat.groupAdmin._id !== user._id && user1._id !== user._id) {
-    toast({
-      title: "Only admins can remove someone!",
-      status: "error",
-      duration: 5000,
-      isClosable: true,
-      position: "bottom",
-    });
-    return;
-  }
+  const { selectedChat, setSelectedChat, user } = ChatState();
+  // Check if current logged-in user is one of the admins:
+  const isUserAdmin = selectedChat?.groupAdmin?.some((admin) => admin._id === user._id);
 
-  try {
-    setLoading(true);
-    const config = {
-      headers: {
-        Authorization: `Bearer ${user.token}`,
-      },
-    };
-    const { data } = await axios.put(
-      `/api/chat/groupremove`,
-      {
-        chatId: selectedChat._id,
-        userId: user1._id,
-      },
-      config
-    );
+  const handleRemove = async (user1) => {
+    if (!isUserAdmin && user1._id !== user._id) {
+      toast({
+        title: "Only admins can remove someone!",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
+      return;
+    }
 
-    user1._id === user._id ? setSelectedChat() : setSelectedChat(data);
-    setFetchAgain(!fetchAgain);
-    fetchMessages();
-    setLoading(false);
-  } catch (error) {
-    toast({
-      title: "Error Occured!",
-      description: error.response.data.message,
-      status: "error",
-      duration: 5000,
-      isClosable: true,
-      position: "bottom",
-    });
-    setLoading(false);
+    try {
+      setLoading(true);
+      const config = {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      };
+      const { data } = await axios.put(
+        `/api/chat/groupremove`,
+        {
+          chatId: selectedChat._id,
+          userId: user1._id,
+        },
+        config
+      );
+
+      user1._id === user._id ? setSelectedChat() : setSelectedChat(data);
+      setFetchAgain(!fetchAgain);
+      fetchMessages();
+      setLoading(false);
+    } catch (error) {
+      toast({
+        title: "Error Occured!",
+        description: error.response.data.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "bottom",
+      });
+      setLoading(false);
+    }
+    setGroupChatName("");
   }
-  setGroupChatName("");
-}
-const handleAddUser=async (user1)=>{
+  const handleAddUser = async (user1) => {
     if (selectedChat.users.find((u) => u._id === user1._id)) {
       toast({
         title: "User Already in group!",
@@ -70,7 +73,7 @@ const handleAddUser=async (user1)=>{
       });
       return;
     }
-    if(selectedChat.groupAdmin._id!==user._id){
+    if (!isUserAdmin) {
       toast({
         title: "Only Admins Can add someone",
         status: "error",
@@ -82,17 +85,17 @@ const handleAddUser=async (user1)=>{
     }
     try {
       setLoading(true);
-      const config={
-        headers:{
-          Authorization:`Bearer ${user.token}`
+      const config = {
+        headers: {
+          Authorization: `Bearer ${user.token}`
         },
       };
-      const {data}=await axios.put(
+      const { data } = await axios.put(
         `/api/chat/groupadd`,
         {
-          chatId:selectedChat._id,
-          userId:user1._id,
-        },config
+          chatId: selectedChat._id,
+          userId: user1._id,
+        }, config
       );
       setSelectedChat(data);
       setFetchAgain(!fetchAgain);
@@ -108,9 +111,9 @@ const handleAddUser=async (user1)=>{
       });
       setLoading(false);
     }
-    setGroupChatName(""); 
+    setGroupChatName("");
   }
-const handleRename= async()=>{
+  const handleRename = async () => {
     if (!groupChatName) return;
 
     try {
@@ -146,9 +149,9 @@ const handleRename= async()=>{
       setRenameLoading(false);
     }
     setGroupChatName("");
-      
+
   }
-const handleSearch=async (query)=>{
+  const handleSearch = async (query) => {
     setSearch(query);
     if (!query) {
       return;
@@ -179,27 +182,27 @@ const handleSearch=async (query)=>{
   }
   return (
     <>
-      <IconButton display={{base:"flex"}} icon={<ViewIcon/>}onClick={onOpen}/>
+      <IconButton display={{ base: "flex" }} icon={<ViewIcon />} onClick={onOpen} />
 
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader
-          fontSize="35px"
-          fontFamily="Work sans"
-          display="flex"
-          justifyContent="center"
+            fontSize="35px"
+            fontFamily="Work sans"
+            display="flex"
+            justifyContent="center"
           >{selectedChat.chatName}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            <Box  w="100%" display="flex" flexWrap="wrap" pb={3}>
-               {selectedChat.users.map((u)=>(
-                  <UserBadgeItem
+            <Box w="100%" display="flex" flexWrap="wrap" pb={3}>
+              {selectedChat.users.map((u) => (
+                <UserBadgeItem
                   key={user._id}
                   user={u}
-                  handleFunction={()=>handleRemove(u)}
-                  />
-               ))}
+                  handleFunction={() => handleRemove(u)}
+                />
+              ))}
             </Box>
             <FormControl display="flex">
               <Input
