@@ -8,8 +8,8 @@ function App() {
     <div className="App">
         <Route path='/' component={Homepage} exact/>
         <Route path='/chats' component={ChatPage} />
-    </div>
+    </div> 
   );
 }
-
+   
 export default App;

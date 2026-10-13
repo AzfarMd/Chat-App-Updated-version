@@ -3,7 +3,7 @@
 const jwt = require("jsonwebtoken");
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: "60d",//set the expiry time of the token as 30 days
+        expiresIn: "60d",//set the expiry time of the token as 60 days
     })
 }
 module.exports = generateToken;

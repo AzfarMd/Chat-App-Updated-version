@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/userModel.js");
 const asyncHandler = require("express-async-handler");
 //works based on the response send by the jwt.sign
+// Confirms that the token was signed by our server and hasn't expired or been altered.
 const protect = asyncHandler(async (req, res, next) => {
   let token;
 
